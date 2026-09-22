@@ -29,9 +29,10 @@ h1{font-size:1.6rem;font-weight:700;margin:0;letter-spacing:.01em;text-wrap:bala
 h2{font-size:.82rem;font-weight:700;letter-spacing:.06em;color:var(--muted);margin:0 0 8px}
 p{margin:0}
 .wrap{max-width:1240px;margin:0 auto;display:grid;gap:16px}
-header{display:grid;grid-template-columns:1fr auto;gap:8px 24px;align-items:start}
-header p{color:var(--muted);max-width:none;margin-top:8px;font-size:.9rem}
-.purpose{margin-top:8px;padding:8px 16px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:0 8px 8px 0;background:var(--panel)}
+header{display:grid;gap:8px}
+.titlerow{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+header p{color:var(--muted);margin:0;font-size:.9rem}
+.purpose{margin-top:0;padding:8px 16px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:0 8px 8px 0;background:var(--panel)}
 .purpose b{display:block;margin-bottom:4px;font-size:.9rem}
 .purpose ol{margin:0;padding-left:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px 24px;counter-reset:p}
 .purpose li{line-height:1.45;font-size:.92rem;padding-left:24px;position:relative}
@@ -39,7 +40,7 @@ header p{color:var(--muted);max-width:none;margin-top:8px;font-size:.9rem}
 .lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel)}
 .lang button{border:0;border-radius:0;padding:8px 16px;font-size:.85rem}
 .lang button.on{background:var(--ink);color:var(--bg)}
-.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.8rem;color:var(--muted);grid-column:1/-1}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.8rem;color:var(--muted)}
 .legend i{display:inline-block;width:16px;height:16px;border-radius:4px;vertical-align:-3px;margin-right:8px;border:2px solid}
 .top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:stretch}
 @media (max-width:1000px){.top{grid-template-columns:1fr}}
@@ -64,7 +65,7 @@ select{width:auto}
 @media (max-width:720px){.grid3{grid-template-columns:1fr}}
 #gate .gatebox{border-width:2px;padding:16px 24px}
 #gate .gatebox b{font-size:1.05rem}
-@media (max-width:900px){.grid{grid-template-columns:1fr}header{grid-template-columns:1fr}}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
 .graph{overflow-x:auto}
 svg{display:block;width:100%;height:auto;max-width:100%;font-family:var(--sans)}
@@ -137,12 +138,12 @@ pre{font-family:var(--mono);font-size:.75rem;background:var(--code-bg);padding:1
 
 <div class="wrap">
   <header>
-    <div>
+    <div class="titlerow">
       <h1>Curry Graph Lab</h1>
-      <div class="purpose"><b data-t="purposeTitle"></b><ol id="purpose"></ol></div>
-      <p data-t="intro"></p>
+      <div class="lang" role="group" aria-label="language"><button id="langJa">日本語</button><button id="langEn">English</button></div>
     </div>
-    <div class="lang" role="group" aria-label="language"><button id="langJa">日本語</button><button id="langEn">English</button></div>
+    <div class="purpose"><b data-t="purposeTitle"></b><ol id="purpose"></ol></div>
+    <p data-t="intro"></p>
     <div class="legend" id="legend"></div>
   </header>
 
