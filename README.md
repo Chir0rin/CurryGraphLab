@@ -1,6 +1,6 @@
 # Curry Graph Lab
 
-An interactive, single-file lesson on how a **state-graph execution engine** works, told through the steps of making curry.
+An interactive, single-file lesson on how a **state-graph execution engine** works, told through the steps of making a Japanese-style curry (a block of roux, rice, and pickles on the side).
 
 **Live page:** https://chir0rin.github.io/CurryGraphLab/
 
