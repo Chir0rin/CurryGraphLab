@@ -40,7 +40,15 @@ header p{color:var(--muted);max-width:64ch;margin-top:8px}
 .lang button.on{background:var(--ink);color:var(--bg)}
 .legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.8rem;color:var(--muted);grid-column:1/-1}
 .legend i{display:inline-block;width:16px;height:16px;border-radius:4px;vertical-align:-3px;margin-right:8px;border:2px solid}
-.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:8px 16px}
+.top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:stretch}
+@media (max-width:1000px){.top{grid-template-columns:1fr}}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.nowpanel{display:grid;align-content:start;gap:8px}
+.statebox{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.statebox thead th{position:sticky;top:0;background:var(--panel);z-index:1}
+.hint{color:var(--muted);font-size:.82rem;margin:0 0 8px}
+tr.changed td.k::before{content:"▲ ";color:var(--accent-ink)}
+tr.divider td{background:var(--code-bg);color:var(--muted);font-size:.75rem;padding:4px 8px;letter-spacing:.04em}
 button{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:8px 16px;cursor:pointer}
 button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 button:disabled{opacity:.45;cursor:default}
@@ -49,7 +57,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 label.opt{display:inline-flex;align-items:center;gap:8px;font-size:.9rem;color:var(--ink)}
 input[type=number],select{font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--panel);color:var(--ink);width:64px}
 select{width:auto}
-.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:24px}
+.grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:24px}
 .grid3{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr);gap:24px}
 @media (max-width:1180px){.grid3{grid-template-columns:1fr 1fr}.grid3>.graph{grid-column:1/-1}}
 @media (max-width:720px){.grid3{grid-template-columns:1fr}}
@@ -137,6 +145,7 @@ pre{font-family:var(--mono);font-size:.75rem;background:var(--code-bg);padding:1
     <div class="legend" id="legend"></div>
   </header>
 
+  <div class="top">
   <div class="toolbar">
     <button class="primary" id="btnStep"></button>
     <button id="btnAuto"></button>
@@ -150,9 +159,15 @@ pre{font-family:var(--mono);font-size:.75rem;background:var(--code-bg);padding:1
     <label class="opt"><span data-t="optFailTimes"></span> <input type="number" id="optFailTimes" value="3" min="1" max="9"></label>
     <label class="opt"><span data-t="optRetries"></span> <input type="number" id="optRetries" value="2" min="0" max="9"></label>
   </div>
+  <div class="panel nowpanel">
+    <h2 data-t="hNow"></h2>
+    <div class="now" id="now"></div>
+    <div class="concepts" id="concepts"></div>
+  </div>
+  </div>
   <div id="gate" hidden></div>
 
-  <div class="grid3">
+  <div class="grid">
     <div class="panel graph">
       <h2 data-t="hGraph"></h2>
       <div class="schema">
@@ -171,23 +186,13 @@ pre{font-family:var(--mono);font-size:.75rem;background:var(--code-bg);padding:1
         <g id="nodes"></g>
       </svg>
       <div id="nodeinfo" class="nodeinfo" hidden></div>
+      <div style="margin-top:16px"><h2 data-t="hFrontier"></h2><div class="front" id="frontier"></div></div>
       <div class="legend" id="edgeLegend" style="margin-top:16px"></div>
     </div>
-
-    <div class="panel" style="display:grid;gap:16px;align-content:start">
-      <div>
-        <h2 data-t="hNow"></h2>
-        <div class="now" id="now"></div>
-        <div class="concepts" id="concepts"></div>
-      </div>
-      <div>
-        <h2 data-t="hFrontier"></h2>
-        <div class="front" id="frontier"></div>
-      </div>
-    </div>
-    <div class="panel">
+    <div class="panel statepanel">
       <h2 data-t="hState"></h2>
-      <div style="overflow-x:auto"><table><thead><tr><th data-t="thKey"></th><th data-t="thVal"></th></tr></thead><tbody id="state"></tbody></table></div>
+      <p class="hint" data-t="stateHint"></p>
+      <div class="statebox"><table><thead><tr><th data-t="thKey"></th><th data-t="thVal"></th></tr></thead><tbody id="state"></tbody></table></div>
     </div>
   </div>
 
@@ -223,7 +228,7 @@ ja: {
   hGraph:'工程のつながり(グラフ)', scNode:'工程', scNodeSub:'ノード', scEdge:'次に進む道', scEdgeSub:'エッジ',
   scState:'共有の記録ノート', scStateSub:'ステート(右の表)。全ての工程が読み書きする 1 冊。工程をクリックすると、その工程が読む欄と書く欄が出る',
   edgeLegend:['実線 = 必ず次へ進む矢印(固定エッジ)','破線 = 様子を見て行き先を決める分かれ道(条件エッジ)','自分に戻る矢印 = 同じ工程を繰り返す(サイクル)','2 本が 1 つに合流 = 両方が終わるのを待つ(ファンイン)'],
-  hNow:'いま起きていること', hFrontier:'次にできる工程(frontier)', hState:'いまの状態(State: 材料・鍋・味の記録)', thKey:'記録欄', thVal:'値',
+  hNow:'いま起きていること', hFrontier:'次にできる工程(frontier)', hState:'いまの状態(State: 材料・鍋・味の記録)', thKey:'記録欄', thVal:'値', stateHint:'この手番で変わった欄を上にまとめて表示(▲)。表の高さは固定で、中でスクロールする。', divChanged:'この手番で変わった欄', divOther:'変わっていない欄',
   hLog:'実行ログ', hCkpt:'セーブ地点(チェックポイント: 毎手番の後に保存される記録)', ckptOpen:'最新のセーブ地点を見る',
   ckptNote:'保存されるのは「何手番目か」「次にできる工程」「終わった工程」「いまの状態」の 4 つ。ゲームのセーブと同じで、途中で電源が落ちても、人の返事が 3 日後でも、同じ場所から続きができる。',
   hGloss:'用語(日常の言葉で)',
@@ -268,7 +273,7 @@ en: {
   hGraph:'How the stages connect (the graph)', scNode:'Stage', scNodeSub:'node', scEdge:'Path to the next stage', scEdgeSub:'edge',
   scState:'Shared notebook', scStateSub:'State (the table on the right). One notebook every stage reads and writes. Click a stage to see which entries it reads and writes',
   edgeLegend:['Solid = always go to the next stage (fixed edge)','Dashed = look at the state and choose (conditional edge)','Arrow back to itself = repeat the stage (cycle)','Two arrows into one = wait for both (fan-in)'],
-  hNow:'What just happened', hFrontier:'Can run next (frontier)', hState:'Current state (ingredients, pot, taste)', thKey:'Entry', thVal:'Value',
+  hNow:'What just happened', hFrontier:'Can run next (frontier)', hState:'Current state (ingredients, pot, taste)', thKey:'Entry', thVal:'Value', stateHint:'Entries changed in this turn are grouped at the top (▲). The table has a fixed height and scrolls inside.', divChanged:'changed in this turn', divOther:'unchanged',
   hLog:'Run log', hCkpt:'Save point (checkpoint: written after every turn)', ckptOpen:'Show the latest save point',
   ckptNote:'Four things are saved: the turn number, what can run next, what is done, and the state. Like a game save: if the power goes out, or a human answers three days later, the run continues from the same place.',
   hGloss:'Terms, in everyday words',
@@ -486,7 +491,11 @@ function render() {
   const tt = t();
   renderStatic(); renderGraph(); renderNodeInfo(); renderNote(); renderLog();
   const f = document.getElementById('frontier'); f.innerHTML = [...S.frontier].map(n => { const ok = (JOIN[n] || []).every(d => S.done.has(d)); return `<span class="${ok ? '' : 'wait'}">${L(n)}${ok ? '' : ' ' + tt.waiting}</span>`; }).join('') || `<span style="color:var(--muted)">${tt.frontEmpty}</span>`;
-  document.getElementById('state').innerHTML = Object.entries(S.state).map(([k, v]) => `<tr class="${S.changed.has(k) ? 'changed' : ''}"><td class="k">${tt.key[k] || k}${REDUCERS[k] ? `<span class="red">${tt.reducerTag}</span>` : ''}<small>${k}</small></td><td class="v">${V(v)}</td></tr>`).join('');
+  { const row = ([k, v], ch) => `<tr class="${ch ? 'changed' : ''}"><td class="k">${tt.key[k] || k}${REDUCERS[k] ? `<span class="red">${tt.reducerTag}</span>` : ''}<small>${k}</small></td><td class="v">${V(v)}</td></tr>`;
+    const entries = Object.entries(S.state); const ch = entries.filter(([k]) => S.changed.has(k)); const rest = entries.filter(([k]) => !S.changed.has(k));
+    const div = label => `<tr class="divider"><td colspan="2">${label}</td></tr>`;
+    document.getElementById('state').innerHTML = (ch.length ? div(tt.divChanged) + ch.map(e => row(e, true)).join('') + div(tt.divOther) : '') + rest.map(e => row(e, false)).join('');
+    const box = document.querySelector('.statebox'); if (box) box.scrollTop = 0; }
   document.getElementById('ckpt').textContent = JSON.stringify({ step: S.step, frontier: [...S.frontier], done: [...S.done], state: S.state }, null, 1);
   document.getElementById('concepts').innerHTML = tt.chips.map((x, i) => `<span class="chip ${[...concepts].some(c => T.ja.chips[i] === c || T.en.chips[i] === c) ? 'on' : ''}">${x}</span>`).join('');
   document.getElementById('btnStep').disabled = S.finished || !!S.paused || S.halted;
