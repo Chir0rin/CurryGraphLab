@@ -50,6 +50,11 @@ label.opt{display:inline-flex;align-items:center;gap:8px;font-size:.9rem;color:v
 input[type=number],select{font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--panel);color:var(--ink);width:64px}
 select{width:auto}
 .grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:24px}
+.grid3{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr);gap:24px}
+@media (max-width:1180px){.grid3{grid-template-columns:1fr 1fr}.grid3>.graph{grid-column:1/-1}}
+@media (max-width:720px){.grid3{grid-template-columns:1fr}}
+#gate .gatebox{border-width:2px;padding:16px 24px}
+#gate .gatebox b{font-size:1.05rem}
 @media (max-width:900px){.grid{grid-template-columns:1fr}header{grid-template-columns:1fr}}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
 .graph{overflow-x:auto}
@@ -90,7 +95,7 @@ svg{display:block;width:100%;height:auto;max-width:100%;font-family:var(--sans)}
 table{width:100%;border-collapse:collapse;font-size:.88rem}
 th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
 th{color:var(--muted);font-weight:700;font-size:.78rem;letter-spacing:.04em}
-td.k{white-space:nowrap}
+td.k{white-space:normal;min-width:120px}
 td.k small{display:block;color:var(--muted);font-family:var(--mono);font-size:.7rem}
 td.v{font-family:var(--mono);word-break:break-all}
 tr.changed td{background:var(--accent-soft)}
@@ -106,6 +111,8 @@ tr.changed td.v::after{content:" ←";color:var(--accent-ink)}
 .log .gate{color:var(--gate)}
 .log .ok{color:var(--done)}
 .gatebox{display:grid;gap:8px;border:1px dashed var(--gate);border-radius:8px;padding:16px;background:var(--gate-soft)}
+.gatebox .row{align-items:center}
+.gatebox .row input[type=text]{flex:1;min-width:200px;width:auto}
 .gatebox input[type=text]{font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--panel);color:var(--ink);width:100%}
 .gatebox .row{display:flex;gap:8px;flex-wrap:wrap}
 .gatebox small{color:var(--muted)}
@@ -143,8 +150,9 @@ pre{font-family:var(--mono);font-size:.75rem;background:var(--code-bg);padding:1
     <label class="opt"><span data-t="optFailTimes"></span> <input type="number" id="optFailTimes" value="3" min="1" max="9"></label>
     <label class="opt"><span data-t="optRetries"></span> <input type="number" id="optRetries" value="2" min="0" max="9"></label>
   </div>
+  <div id="gate" hidden></div>
 
-  <div class="grid">
+  <div class="grid3">
     <div class="panel graph">
       <h2 data-t="hGraph"></h2>
       <div class="schema">
@@ -176,11 +184,10 @@ pre{font-family:var(--mono);font-size:.75rem;background:var(--code-bg);padding:1
         <h2 data-t="hFrontier"></h2>
         <div class="front" id="frontier"></div>
       </div>
-      <div id="gate" hidden></div>
-      <div>
-        <h2 data-t="hState"></h2>
-        <div style="overflow-x:auto"><table><thead><tr><th data-t="thKey"></th><th data-t="thVal"></th></tr></thead><tbody id="state"></tbody></table></div>
-      </div>
+    </div>
+    <div class="panel">
+      <h2 data-t="hState"></h2>
+      <div style="overflow-x:auto"><table><thead><tr><th data-t="thKey"></th><th data-t="thVal"></th></tr></thead><tbody id="state"></tbody></table></div>
     </div>
   </div>
 
@@ -487,7 +494,7 @@ function render() {
   const g = document.getElementById('gate');
   if (S.paused) {
     g.hidden = false; const names = S.paused.map(L).join('、');
-    g.innerHTML = `<div class="gatebox"><b>${tt.gateTitle(names)}</b><small>${tt.gateSub}</small><input type="text" id="humanNote" placeholder="${tt.gatePh}" value="${tt.gateDefault}"><div class="row"><button class="primary" id="btnApprove">${tt.approve}</button><button id="btnReject">${tt.reject}</button></div></div>`;
+    g.innerHTML = `<div class="gatebox"><b>${tt.gateTitle(names)}</b><small>${tt.gateSub}</small><div class="row"><input type="text" id="humanNote" placeholder="${tt.gatePh}" value="${tt.gateDefault}"><button class="primary" id="btnApprove">${tt.approve}</button><button id="btnReject">${tt.reject}</button></div></div>`;
     document.getElementById('btnApprove').onclick = () => { S.state = { ...S.state, human_note: document.getElementById('humanNote').value }; S.changed = new Set(['human_note']); S.paused = null; S.approvedOnce = true; log('✔ approved; human_note recorded', 'gate'); stepOnce(); };
     document.getElementById('btnReject').onclick = () => { log('✖ rejected; graph stays paused (fail closed)', 'gate'); note('reject', {}, [tt.chips[7]]); render(); };
   } else if (S.halted) {
