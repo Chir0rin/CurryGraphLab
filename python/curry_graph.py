@@ -1,9 +1,10 @@
 """
-カレー作りグラフ v2 — 「工学」側の 3 概念を足した版
+カレー作りグラフ — 状態グラフ実行エンジンの最小実装(学習用)
   1. スーパーステップ実行 + 注釈駆動 Reducer(本当の並行ファンアウト/合流)
   2. チェックポイント(毎ステップ JSON 保存 → 途中再開)
   3. interrupt(指定ノードの前で止まり、人の入力を待つ)
-依存なし。python3 curry_graph_v2.py [--resume] [--approve]
+依存なし。python3 curry_graph.py [--resume] [--approve]
+  環境変数: INTERRUPT_BEFORE=node,node  FAIL=node:times  RETRIES=n
 """
 from __future__ import annotations
 import json, os, sys, typing
@@ -106,7 +107,7 @@ EDGES: dict[str, Callable | list[str]] = {
 JOIN = {"plate": {"cook_rice", "prepare_pickles"}}   # plate は両方が終わるまで待つ(ファンイン)
 START = "shop_check"
 INTERRUPT_BEFORE = set(os.environ.get("INTERRUPT_BEFORE", "add_roux").split(","))
-CHECKPOINT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "curry_checkpoint_v3.json")
+CHECKPOINT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "curry_checkpoint.json")
 FAIL = os.environ.get("FAIL", "")            # 例 "cook_rice:2" = cook_rice を 2 回失敗させる
 RETRIES = int(os.environ.get("RETRIES", "0"))
 _fail_left = {FAIL.split(":")[0]: int(FAIL.split(":")[1])} if FAIL else {}

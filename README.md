@@ -11,20 +11,16 @@ Open `index.html` (no server, no dependencies; Japanese / English toggle at the 
 - See why a **reducer** (merge rule) is needed when two stages write the same entry in the same turn.
 - Every turn writes a **checkpoint**; an **interrupt** pauses before a chosen stage and waits for a human; injected failures show **retries** and a stop-with-progress-kept for manual repair.
 
-## Python versions
+## Python version
 
-`python/` holds the same graph as plain scripts, in three steps:
-
-| File | Adds |
-|---|---|
-| `curry_graph_v1.py` | the original: state, nodes, fixed and conditional edges, a cycle, a hand-coded reducer, a serial executor |
-| `curry_graph_v2.py` | superstep execution with true fan-out/fan-in, reducers driven by `Annotated[...]` type hints, checkpoint to JSON, `interrupt_before` with `--resume --approve` |
-| `curry_graph_v3.py` | v2 + failure injection and retries via environment variables (`FAIL=cook_rice:3 RETRIES=2`), stop with the frontier kept, resume after repair |
+`python/curry_graph.py` is the same graph as a plain script, with no dependencies: superstep execution with true fan-out/fan-in, reducers driven by `Annotated[...]` type hints, a JSON checkpoint after every turn, `interrupt_before` with resume, and failure injection with retries.
 
 ```bash
-python3 python/curry_graph_v2.py            # stops before add_roux
-python3 python/curry_graph_v2.py --resume --approve
-FAIL=cook_rice:3 RETRIES=2 python3 python/curry_graph_v3.py --resume --approve
+python3 python/curry_graph.py                       # runs until the interrupt before add_roux
+python3 python/curry_graph.py --resume --approve     # records the human note and continues
+INTERRUPT_BEFORE=add_roux,taste_check python3 python/curry_graph.py          # ask at every tasting too
+FAIL=cook_rice:3 RETRIES=2 python3 python/curry_graph.py --resume --approve  # fail 3 times, retry 2 → stop, keep progress
+FAIL= python3 python/curry_graph.py --resume --approve                       # "repair" and continue from the checkpoint
 ```
 
 ## Terms (plain words first)
