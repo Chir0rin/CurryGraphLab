@@ -1,0 +1,501 @@
+<title>Curry Graph Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f6f4ee; --panel:#fffdf8; --ink:#1f2430; --muted:#6b7280; --line:#e2ddd2;
+  --accent:#c98a12; --accent-ink:#5a3d00; --accent-soft:#fbf1d8;
+  --done:#4f8a63; --done-soft:#e3efe6; --pending:#a9b0bd; --fail:#b5432d; --fail-soft:#f8e2dc;
+  --gate:#3b6ea5; --gate-soft:#e0eaf6; --code-bg:#f1eee6;
+  --radius:10px; --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181f; --panel:#1c2029; --ink:#e8e6df; --muted:#9aa1ad; --line:#2d323d;
+    --accent:#e0a63a; --accent-ink:#ffe1a6; --accent-soft:#3a2f14;
+    --done:#7fbf93; --done-soft:#1f3327; --pending:#5c6472; --fail:#e0705a; --fail-soft:#3f221c;
+    --gate:#7aa6d9; --gate-soft:#1e2c3d; --code-bg:#121419;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181f; --panel:#1c2029; --ink:#e8e6df; --muted:#9aa1ad; --line:#2d323d;
+  --accent:#e0a63a; --accent-ink:#ffe1a6; --accent-soft:#3a2f14;
+  --done:#7fbf93; --done-soft:#1f3327; --pending:#5c6472; --fail:#e0705a; --fail-soft:#3f221c;
+  --gate:#7aa6d9; --gate-soft:#1e2c3d; --code-bg:#121419;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);padding:0 16px;padding-block:20px 40px;line-height:1.55}
+h1{font-size:1.5rem;font-weight:700;margin:0;letter-spacing:.01em;text-wrap:balance}
+h2{font-size:.8rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+p{margin:0}
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:16px}
+header{display:grid;grid-template-columns:1fr auto;gap:12px 24px;align-items:start}
+header p{color:var(--muted);max-width:64ch;margin-top:4px}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel)}
+.lang button{border:0;border-radius:0;padding:5px 12px;font-size:.85rem}
+.lang button.on{background:var(--ink);color:var(--bg)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.8rem;color:var(--muted);grid-column:1/-1}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px;border:2px solid}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px}
+button{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
+.sep{width:1px;height:24px;background:var(--line);margin:0 4px}
+label.opt{display:inline-flex;align-items:center;gap:6px;font-size:.9rem;color:var(--ink)}
+input[type=number],select{font:inherit;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--panel);color:var(--ink);width:64px}
+select{width:auto}
+.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}header{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.graph{overflow-x:auto}
+svg{display:block;width:100%;height:auto;max-width:100%;font-family:var(--sans)}
+.node{cursor:pointer}
+.node rect{fill:var(--panel);stroke:var(--pending);stroke-width:1.5;rx:8}
+.node text{fill:var(--ink);font-size:12px;font-weight:500}
+.node.frontier rect{stroke:var(--accent);stroke-width:2.5;fill:var(--accent-soft)}
+.node.done rect{stroke:var(--done);fill:var(--done-soft)}
+.node.failed rect{stroke:var(--fail);stroke-width:2.5;fill:var(--fail-soft)}
+.node.retried rect{stroke:var(--fail);stroke-width:2.5;stroke-dasharray:4 3}
+.node.interrupt rect{stroke:var(--gate);stroke-width:2.5;stroke-dasharray:5 3;fill:var(--gate-soft)}
+.node.selected rect{stroke-width:3.5}
+.edge{stroke:var(--pending);stroke-width:1.5;fill:none;marker-end:url(#arr)}
+.edge.cond{stroke-dasharray:6 4}
+.edge.active{stroke:var(--accent);stroke-width:2.5;marker-end:url(#arr-active)}
+.edge.taken{stroke:var(--done);marker-end:url(#arr-done)}
+.badge{font-size:10px;fill:var(--muted)}
+.elabel{font-size:10px;fill:var(--gate);font-weight:500}
+.elabel-bg{fill:var(--panel)}
+.schema{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:0 0 10px;font-size:.82rem}
+.schema>div{display:flex;flex-direction:column;justify-content:center;border-radius:8px;padding:6px 10px;line-height:1.3}
+.schema small{color:var(--muted);font-size:.72rem}
+.sc-node{border:1.5px solid var(--pending);background:var(--panel);min-width:80px}
+.sc-edge{position:relative;padding-right:22px!important;color:var(--muted)}
+.sc-edge i{position:absolute;right:0;top:50%;width:16px;height:0;border-top:1.5px solid var(--pending)}
+.sc-edge i::after{content:"";position:absolute;right:-2px;top:-4px;border:4px solid transparent;border-left:6px solid var(--pending)}
+.sc-state{border:1.5px dashed var(--gate);background:var(--gate-soft);flex:1;min-width:220px}
+.nodeinfo{margin-top:8px;border-left:3px solid var(--gate);background:var(--gate-soft);padding:8px 12px;border-radius:0 8px 8px 0;font-size:.88rem;display:grid;gap:4px}
+.nodeinfo code{font-family:var(--mono);font-size:.8rem;background:var(--panel);padding:0 4px;border-radius:4px}
+.now{display:grid;gap:6px;border-left:3px solid var(--accent);padding:8px 12px;background:var(--accent-soft);border-radius:0 8px 8px 0}
+.now .step{font-family:var(--mono);font-size:.8rem;color:var(--accent-ink)}
+.now .what{font-weight:700}
+.now .why{color:var(--muted);font-size:.92rem}
+.concepts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-size:.78rem;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--panel)}
+.chip.on{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft);font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:.86rem}
+th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500;font-size:.75rem;letter-spacing:.05em;text-transform:uppercase}
+td.k{white-space:nowrap}
+td.k small{display:block;color:var(--muted);font-family:var(--mono);font-size:.7rem}
+td.v{font-family:var(--mono);word-break:break-all}
+tr.changed td{background:var(--accent-soft)}
+tr.changed td.v::after{content:" ←";color:var(--accent-ink)}
+.red{display:inline-block;font-size:.68rem;padding:0 6px;border-radius:999px;background:var(--gate-soft);color:var(--gate);margin-left:6px}
+.front{font-size:.85rem;display:flex;flex-wrap:wrap;gap:6px}
+.front span{padding:2px 8px;border-radius:6px;background:var(--code-bg);border:1px solid var(--line)}
+.front span.wait{border-style:dashed;color:var(--muted)}
+.log{font-family:var(--mono);font-size:.8rem;max-height:260px;overflow:auto;background:var(--code-bg);border-radius:8px;padding:10px;display:grid;gap:3px}
+.log .l{display:grid;grid-template-columns:44px 1fr;gap:8px}
+.log .n{color:var(--muted)}
+.log .fail{color:var(--fail)}
+.log .gate{color:var(--gate)}
+.log .ok{color:var(--done)}
+.gatebox{display:grid;gap:8px;border:1px dashed var(--gate);border-radius:8px;padding:10px;background:var(--gate-soft)}
+.gatebox input[type=text]{font:inherit;border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--panel);color:var(--ink);width:100%}
+.gatebox .row{display:flex;gap:8px;flex-wrap:wrap}
+.gatebox small{color:var(--muted)}
+details{border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--panel)}
+summary{cursor:pointer;font-weight:500}
+pre{font-family:var(--mono);font-size:.75rem;background:var(--code-bg);padding:10px;border-radius:8px;overflow-x:auto;margin:8px 0 0}
+.glossary{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.glossary div{border-top:2px solid var(--line);padding-top:8px}
+.glossary b{display:block;margin-bottom:2px}
+.glossary p{color:var(--muted);font-size:.9rem}
+@media (prefers-reduced-motion:no-preference){.node rect,.edge{transition:stroke .25s,fill .25s}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Curry Graph Lab</h1>
+      <p data-t="intro"></p>
+    </div>
+    <div class="lang" role="group" aria-label="language"><button id="langJa">日本語</button><button id="langEn">English</button></div>
+    <div class="legend" id="legend"></div>
+  </header>
+
+  <div class="toolbar">
+    <button class="primary" id="btnStep"></button>
+    <button id="btnAuto"></button>
+    <button id="btnReset"></button>
+    <span class="sep"></span>
+    <label class="opt"><input type="checkbox" id="optParallel" checked> <span data-t="optParallel"></span></label>
+    <label class="opt"><input type="checkbox" id="optInterruptRoux" checked> <span data-t="optIntRoux"></span></label>
+    <label class="opt"><input type="checkbox" id="optInterruptTaste"> <span data-t="optIntTaste"></span></label>
+    <span class="sep"></span>
+    <label class="opt"><span data-t="optFail"></span> <select id="optFailNode"><option value="" data-t="none"></option><option value="cook_rice">cook_rice</option><option value="simmer">simmer</option><option value="add_salt">add_salt</option></select></label>
+    <label class="opt"><span data-t="optFailTimes"></span> <input type="number" id="optFailTimes" value="3" min="1" max="9"></label>
+    <label class="opt"><span data-t="optRetries"></span> <input type="number" id="optRetries" value="2" min="0" max="9"></label>
+  </div>
+
+  <div class="grid">
+    <div class="panel graph">
+      <h2 data-t="hGraph"></h2>
+      <div class="schema">
+        <div class="sc-node"><span data-t="scNode"></span><small data-t="scNodeSub"></small></div>
+        <div class="sc-edge"><span data-t="scEdge"></span><small data-t="scEdgeSub"></small><i></i></div>
+        <div class="sc-node"><span data-t="scNode"></span><small data-t="scNodeSub"></small></div>
+        <div class="sc-state"><span data-t="scState"></span><small data-t="scStateSub"></small></div>
+      </div>
+      <svg id="svg" viewBox="0 0 760 470" role="img" aria-label="graph">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a9b0bd"/></marker>
+          <marker id="arr-active" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#c98a12"/></marker>
+          <marker id="arr-done" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#4f8a63"/></marker>
+        </defs>
+        <g id="edges"></g>
+        <g id="nodes"></g>
+      </svg>
+      <div id="nodeinfo" class="nodeinfo" hidden></div>
+      <div class="legend" id="edgeLegend" style="margin-top:8px"></div>
+    </div>
+
+    <div class="panel" style="display:grid;gap:14px;align-content:start">
+      <div>
+        <h2 data-t="hNow"></h2>
+        <div class="now" id="now"></div>
+        <div class="concepts" id="concepts"></div>
+      </div>
+      <div>
+        <h2 data-t="hFrontier"></h2>
+        <div class="front" id="frontier"></div>
+      </div>
+      <div id="gate" hidden></div>
+      <div>
+        <h2 data-t="hState"></h2>
+        <div style="overflow-x:auto"><table><thead><tr><th data-t="thKey"></th><th data-t="thVal"></th></tr></thead><tbody id="state"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2 data-t="hLog"></h2>
+      <div class="log" id="log"></div>
+    </div>
+    <div class="panel">
+      <h2 data-t="hCkpt"></h2>
+      <details><summary data-t="ckptOpen"></summary><pre id="ckpt">{}</pre></details>
+      <p style="color:var(--muted);font-size:.9rem;margin-top:8px" data-t="ckptNote"></p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 data-t="hGloss"></h2>
+    <div class="glossary" id="glossary"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================ i18n
+const T = {
+ja: {
+  intro:'カレー作りの手順を「工程のつながり(グラフ)」として書き、それを 1 手番ずつ動かして観察するページ。左の図で「次にどの工程ができるか」、右の表で「材料や鍋の状態がどう変わったか」、解説で「いま何が起きたか」を追う。専門用語は括弧の中に添えてある。',
+  legend:[['frontier','次にできる工程(frontier)'],['done','完了'],['interrupt','人に聞くため停止(interrupt)'],['failed','失敗して停止'],['retried','失敗したがやり直しで成功']],
+  btnStep:'1 手番進める', btnAuto:'自動で進める', btnStop:'停止', btnReset:'最初から',
+  optParallel:'手分けして同時に進める(並行実行)', optIntRoux:'ルーを入れる前に人に聞く', optIntTaste:'味見の前にも人に聞く',
+  optFail:'わざと失敗させる工程', none:'なし', optFailTimes:'失敗する回数', optRetries:'やり直し上限',
+  hGraph:'工程のつながり(グラフ)', scNode:'工程', scNodeSub:'ノード', scEdge:'次に進む道', scEdgeSub:'エッジ',
+  scState:'共有の記録ノート', scStateSub:'ステート(右の表)。全ての工程が読み書きする 1 冊。工程をクリックすると、その工程が読む欄と書く欄が出る',
+  edgeLegend:['実線 = 必ず次へ進む矢印(固定エッジ)','破線 = 様子を見て行き先を決める分かれ道(条件エッジ)','自分に戻る矢印 = 同じ工程を繰り返す(サイクル)','2 本が 1 つに合流 = 両方が終わるのを待つ(ファンイン)'],
+  hNow:'いま起きていること', hFrontier:'次にできる工程(frontier)', hState:'いまの状態(State: 材料・鍋・味の記録)', thKey:'記録欄', thVal:'値',
+  hLog:'実行ログ', hCkpt:'セーブ地点(チェックポイント: 毎手番の後に保存される記録)', ckptOpen:'最新のセーブ地点を見る',
+  ckptNote:'保存されるのは「何手番目か」「次にできる工程」「終わった工程」「いまの状態」の 4 つ。ゲームのセーブと同じで、途中で電源が落ちても、人の返事が 3 日後でも、同じ場所から続きができる。',
+  hGloss:'用語(日常の言葉で)',
+  gloss:[['手番(スーパーステップ)','「いまできる工程」をまとめて 1 回動かす単位。ご飯と漬物のように同時にできる工程は同じ手番で進み、結果はまとめて記録される。'],
+    ['合流のルール(Reducer)','2 つの工程が同じ記録欄に同時に書いた時、どう合わせるかの決まり。「付け合わせ」欄は「追記」なので、ご飯と漬物の両方が残る。決まりが「上書き」だと片方が消える。'],
+    ['分かれ道と繰り返し(条件エッジ・サイクル)','工程が終わった後の状態を見て次を決める矢印。「まだ固いならもう一度煮る」のように自分に戻せば繰り返しになる。やめる条件は回数ではなく状態(柔らかさ・塩の量)で決める。'],
+    ['手分けと合流(ファンアウト・ファンイン)','手分け = 1 つの工程の後に複数の工程を同時に始めること(味見 → ご飯と漬物を別々に)。合流 = 同時に進めた工程が全部終わるまで次を待つこと(盛り付けは両方が揃ってから)。合流で同じ記録欄に書くと衝突するので、合流のルールが必要になる。'],
+    ['セーブ地点(チェックポイント)','毎手番の後に「どこまで進んだか」と「いまの状態」を保存する。途中で止まっても、保存した所から続きができる。'],
+    ['人に聞く停止(interrupt)','決めた工程の直前で止まり、人の返事を待つ。返事は記録に残る(human_note)。止める場所を増やすほど、人が答える回数が増える。'],
+    ['やり直しと手動介入(再試行)','工程が失敗したら決めた回数までやり直す。それでも駄目なら、進み具合を保ったまま止まって人を待つ。直した後は最初からではなく続きから。']],
+  chips:['手番','合流のルール','分かれ道','繰り返し','手分け','合流','セーブ地点','人に聞く停止','やり直し'],
+  stepLabel:'手番', doneLabel:'完了', readyLabel:'開始前',
+  initWhat:'始める前。次にできる工程は「買い物チェック」だけ。', initWhy:'「1 手番進める」を押すと、次にできる工程が 1 手番ぶんだけ進む。',
+  frontEmpty:'(なし = 完了)', waiting:'(合流待ち)', reducerTag:'追記で合流',
+  gateTitle:n=>`⏸ 「${n}」の前で人の判断待ち`, gateSub:'承認すると、この入力が記録(human_note)に残り、同じ場所から続きが進む。却下すると止まったまま。', gatePh:'例: ルーは中辛で', gateDefault:'ルーは中辛で', approve:'承認して再開', reject:'却下(止めたまま)',
+  intWhat:n=>`⏸ 「${n}」の前で止まって人に聞く`, intWhy:'返事が来るまで進まない。状態は保存済みなので、返事が明日でも同じ場所から続きができる。',
+  rejWhat:'却下。止まったまま', rejWhy:'迷ったら「何もしない」側に倒れる(fail closed)。承認が無いまま先へ進む道は用意していない。',
+  failWhat:n=>`✖ 「${n}」がやり直し上限に達した`, failWhy:'進み具合を保ったまま停止。直して「再開」を押すと、最初からではなくこの手番から続く。',
+  repairTitle:n=>`✖ 人の手直し待ち(「${n}」)`, repairSub:'直したら再開。セーブ地点から続きなので、同時に成功した工程の結果は失われない。', repair:'直して再開',
+  retriedMsg:(n,a,r)=>`⚠ 「${n}」は ${a} 回失敗してから成功(やり直し上限 ${r} 回の内側)`,
+  finWhat:'盛り付け完了。最後の工程まで到達した。', finWhy:(s,c,g,sd)=>`合計 ${s} 手番。味見 ${c} 回、塩 ${g}g、付け合わせ ${sd}。`,
+  fanWhat:ns=>`「${ns.join('」と「')}」を同じ手番で手分けして実行`, fanWhyMerged:k=>`両方が同じ記録欄「${k}」に書いた。合流のルールが「追記」なので、どちらの結果も残っている。「上書き」なら片方が消えるところ。`, fanWhy:'手分けした工程の結果は、この手番の終わりにまとめて記録される。',
+  joinWhat:(r,w)=>`「${r}」を実行。「${w}」は待機(合流待ち)`, joinWhy:(w,d)=>`「${w}」は ${d} の両方が終わってから始まる。`,
+  cycWhat:n=>`「${n}」を実行。様子を見て、もう一度同じ工程へ(繰り返し)`, cycWhy:v=>`やめる条件は状態の値(柔らかさ ${v})。回数ではなく状態で決めているので、条件を変えれば繰り返す回数が変わる。`,
+  condWhat:(n,t)=>`「${n}」を実行し、様子を見て「${t}」へ`, condWhy:'工程が状態を書き終えた「後」で行き先を決める。順序が逆だと 1 回余計に回る。',
+  fixWhat:(n,t)=>`「${n}」を実行 → 次は「${t}」`, fixWhy:k=>`必ず次へ進む矢印。変わった記録欄: ${k || 'なし'}。`,
+  niNode:n=>`ノード「${n}」`, niReads:'読む記録欄', niWrites:'書く記録欄', niOut:'出ていくエッジ', niNone:'なし', niEnd:'なし(終点)', niJoin:'入ってくるエッジが揃うまで待つ(合流)',
+  label:{ shop_check:'買い物チェック', shop_buy_missing:'不足を購入', peel_vegetables:'皮をむく', cut_vegetables:'切る', saute_meat:'肉を炒める', saute_vegetables:'野菜を炒める', add_water:'水を入れる', simmer:'煮込む', add_roux:'ルー投入', taste_check:'味見', add_salt:'塩を足す', cook_rice:'ご飯を炊く', prepare_pickles:'漬物を用意', plate:'盛り付け' },
+  desc:{ shop_check:'手持ちの材料と必要な材料を比べ、足りないものを記録する。結果次第で行き先が分かれる。', shop_buy_missing:'足りない材料を買って手持ちに足す。', peel_vegetables:'皮をむく野菜だけ選んで処理する(工程の中で 1 つずつ繰り返す)。', cut_vegetables:'切り方の設定を読み、野菜を切る。', saute_meat:'肉に焼き色を付ける。', saute_vegetables:'野菜をしんなりさせる。', add_water:'水を入れる。', simmer:'10 分煮込む。柔らかさが 1.0 未満なら、様子を見てもう一度自分に戻る(繰り返し)。', add_roux:'ルーを入れる。人に聞く停止の既定位置。', taste_check:'塩の量を見て「薄い」か「良好」かを決め、味見の履歴に追記する。', add_salt:'塩を 1g 足す(合流のルールで加算)。', cook_rice:'ご飯を炊く。漬物と同じ手番で手分け。', prepare_pickles:'漬物を用意する。ご飯と同じ手番で手分け。', plate:'ご飯と漬物の両方が揃うのを待って盛り付ける(合流)。' },
+  edge:{ 'shop_check>shop_buy_missing':'不足あり','shop_check>peel_vegetables':'全部ある','simmer>simmer':'柔らかさ < 1.0','simmer>add_roux':'柔らかさ 1.0','taste_check>add_salt':'薄い','taste_check>cook_rice':'良好','taste_check>prepare_pickles':'良好' },
+  key:{ ingredients:'手持ちの材料', missing_items:'足りない材料', peeled_vegetables:'皮をむいた野菜', cut_vegetables:'切った野菜', cut_style:'切り方', meat_browned:'肉に焼き色', vegetables_sauteed:'野菜がしんなり', water_added_ml:'入れた水(ml)', simmer_elapsed_min:'煮込み時間(分)', potato_softness:'じゃがいもの柔らかさ', salt_g:'塩(g)', roux_added:'ルー投入済み', taste_result:'味見の結果', revision_count:'味見の回数', taste_history:'味見の履歴', sides_ready:'付け合わせ', final_dish_ready:'完成', human_note:'人のメモ', errors:'失敗の記録' },
+  val:{ 'カレールー':'カレールー' },
+},
+en: {
+  intro:'Write the steps of making curry as a graph of connected stages, then run it one turn at a time and watch. The diagram on the left shows which stages can run next, the table on the right shows how the ingredients and the pot change, and the narration says what just happened. Technical terms follow in parentheses.',
+  legend:[['frontier','can run next (frontier)'],['done','done'],['interrupt','paused to ask a human (interrupt)'],['failed','failed and stopped'],['retried','failed, then succeeded on retry']],
+  btnStep:'Advance one turn', btnAuto:'Auto-run', btnStop:'Stop', btnReset:'Restart',
+  optParallel:'Run stages side by side (parallel)', optIntRoux:'Ask a human before adding roux', optIntTaste:'Also ask before each tasting',
+  optFail:'Make a stage fail on purpose', none:'none', optFailTimes:'Times it fails', optRetries:'Retry limit',
+  hGraph:'How the stages connect (the graph)', scNode:'Stage', scNodeSub:'node', scEdge:'Path to the next stage', scEdgeSub:'edge',
+  scState:'Shared notebook', scStateSub:'State (the table on the right). One notebook every stage reads and writes. Click a stage to see which entries it reads and writes',
+  edgeLegend:['Solid = always go to the next stage (fixed edge)','Dashed = look at the state and choose (conditional edge)','Arrow back to itself = repeat the stage (cycle)','Two arrows into one = wait for both (fan-in)'],
+  hNow:'What just happened', hFrontier:'Can run next (frontier)', hState:'Current state (ingredients, pot, taste)', thKey:'Entry', thVal:'Value',
+  hLog:'Run log', hCkpt:'Save point (checkpoint: written after every turn)', ckptOpen:'Show the latest save point',
+  ckptNote:'Four things are saved: the turn number, what can run next, what is done, and the state. Like a game save: if the power goes out, or a human answers three days later, the run continues from the same place.',
+  hGloss:'Terms, in everyday words',
+  gloss:[['Turn (superstep)','Run everything that can run right now, together, once. Stages that can happen at the same time (rice and pickles) run in the same turn and their results are recorded together.'],
+    ['Merge rule (reducer)','What to do when two stages write the same notebook entry in the same turn. The "sides" entry is "append", so both rice and pickles survive. With "overwrite", one would vanish.'],
+    ['Fork in the road and repeat (conditional edge, cycle)','An arrow that looks at the state after a stage and picks the next one. Pointing back to the same stage ("still hard? simmer again") makes a loop. The exit condition is a state value (softness, salt), not a count.'],
+    ['Split and join (fan-out, fan-in)','Split = start several stages at once after one finishes (tasting → rice and pickles separately). Join = the next stage waits until all of them are done (plating waits for both). Writes to the same entry collide at the join, which is why a merge rule is needed.'],
+    ['Save point (checkpoint)','After every turn, record how far the run got and the current state. If it stops, it continues from the last save.'],
+    ['Pause to ask a human (interrupt)','Stop right before a chosen stage and wait for a person. The answer is recorded (human_note). More stops mean more answers a person has to give.'],
+    ['Retry and manual repair','A failed stage is retried up to a limit. If it still fails, the run stops with its progress intact and waits for a person. After the repair it continues, not restarts.']],
+  chips:['turn','merge rule','fork','repeat','split','join','save point','ask a human','retry'],
+  stepLabel:'TURN', doneLabel:'DONE', readyLabel:'READY',
+  initWhat:'Before the start. The only stage that can run is "Check shopping".', initWhy:'Press "Advance one turn" and the stages that can run advance by one turn.',
+  frontEmpty:'(none = finished)', waiting:'(waiting to join)', reducerTag:'append on merge',
+  gateTitle:n=>`⏸ Waiting for a human before "${n}"`, gateSub:'Approve, and this note is recorded (human_note) and the run continues from here. Reject, and it stays paused.', gatePh:'e.g. medium-hot roux', gateDefault:'medium-hot roux', approve:'Approve and continue', reject:'Reject (stay paused)',
+  intWhat:n=>`⏸ Paused before "${n}" to ask a human`, intWhy:'Nothing moves until the answer arrives. The state is saved, so the run continues from the same place even if the answer comes tomorrow.',
+  rejWhat:'Rejected. Still paused', rejWhy:'When in doubt, fall toward doing nothing (fail closed). There is no path forward without an approval.',
+  failWhat:n=>`✖ "${n}" hit the retry limit`, failWhy:'Stopped with progress intact. Repair it and press resume to continue from this turn, not from the start.',
+  repairTitle:n=>`✖ Waiting for a manual repair ("${n}")`, repairSub:'Resume after the repair. It continues from the save point, so results of stages that succeeded alongside are kept.', repair:'Repair and resume',
+  retriedMsg:(n,a,r)=>`⚠ "${n}" failed ${a} time(s), then succeeded (within the retry limit of ${r})`,
+  finWhat:'Plated. The last stage has been reached.', finWhy:(s,c,g,sd)=>`${s} turns in total. ${c} tastings, ${g} g of salt, sides: ${sd}.`,
+  fanWhat:ns=>`Ran "${ns.join('" and "')}" side by side in one turn`, fanWhyMerged:k=>`Both wrote the same entry "${k}". The merge rule is "append", so both results survive. With "overwrite" one would be lost.`, fanWhy:'Results of stages run side by side are recorded together at the end of the turn.',
+  joinWhat:(r,w)=>`Ran "${r}". "${w}" is waiting (join)`, joinWhy:(w,d)=>`"${w}" starts only after both ${d} are done.`,
+  cycWhat:n=>`Ran "${n}", looked at the state, and chose the same stage again (repeat)`, cycWhy:v=>`The exit condition is a state value (softness ${v}). It is decided by state, not by count, so changing the condition changes how many times it repeats.`,
+  condWhat:(n,t)=>`Ran "${n}", looked at the state, and chose "${t}"`, condWhy:'The direction is chosen after the stage has written its state. Reversing that order would add one extra loop.',
+  fixWhat:(n,t)=>`Ran "${n}" → next is "${t}"`, fixWhy:k=>`Fixed edge. Entries changed: ${k || 'none'}.`,
+  niNode:n=>`Node "${n}"`, niReads:'Reads', niWrites:'Writes', niOut:'Outgoing edges', niNone:'none', niEnd:'none (end)', niJoin:'waits for all incoming edges (join)',
+  label:{ shop_check:'Check shopping', shop_buy_missing:'Buy missing', peel_vegetables:'Peel', cut_vegetables:'Cut', saute_meat:'Brown meat', saute_vegetables:'Sauté veg', add_water:'Add water', simmer:'Simmer', add_roux:'Add roux', taste_check:'Taste', add_salt:'Add salt', cook_rice:'Cook rice', prepare_pickles:'Prepare pickles', plate:'Plate' },
+  desc:{ shop_check:'Compares what you have with what you need and records what is missing. The result decides the direction.', shop_buy_missing:'Buys the missing items and adds them to what you have.', peel_vegetables:'Picks the vegetables that need peeling and processes them one by one (a loop inside the stage).', cut_vegetables:'Reads the cut style and cuts the vegetables.', saute_meat:'Browns the meat.', saute_vegetables:'Softens the vegetables.', add_water:'Adds water.', simmer:'Simmers for 10 minutes. If softness is below 1.0, it points back to itself (repeat).', add_roux:'Adds the roux. Default place to ask a human.', taste_check:'Looks at the salt, decides "thin" or "good", and appends to the tasting history.', add_salt:'Adds 1 g of salt (added up by the merge rule).', cook_rice:'Cooks rice. Runs side by side with pickles.', prepare_pickles:'Prepares pickles. Runs side by side with rice.', plate:'Waits for rice and pickles, then plates (join).' },
+  edge:{ 'shop_check>shop_buy_missing':'missing','shop_check>peel_vegetables':'all present','simmer>simmer':'softness < 1.0','simmer>add_roux':'softness 1.0','taste_check>add_salt':'thin','taste_check>cook_rice':'good','taste_check>prepare_pickles':'good' },
+  key:{ ingredients:'ingredients on hand', missing_items:'missing items', peeled_vegetables:'peeled vegetables', cut_vegetables:'cut vegetables', cut_style:'cut style', meat_browned:'meat browned', vegetables_sauteed:'vegetables softened', water_added_ml:'water added (ml)', simmer_elapsed_min:'simmer time (min)', potato_softness:'potato softness', salt_g:'salt (g)', roux_added:'roux added', taste_result:'taste result', revision_count:'tastings', taste_history:'tasting history', sides_ready:'sides', final_dish_ready:'finished', human_note:'human note', errors:'failure record' },
+  val:{ '人参':'carrot','じゃがいも':'potato','豚肉':'pork','玉ねぎ':'onion','カレールー':'curry roux','一口大':'bite-size','薄い':'thin','良好':'good','ご飯':'rice','福神漬け':'pickles','ルーは中辛で':'medium-hot roux' },
+}};
+let lang = 'ja';
+try { lang = localStorage.getItem('cgl-lang') || (navigator.language.startsWith('ja') ? 'ja' : 'en'); } catch (e) {}
+const t = () => T[lang];
+const L = n => t().label[n];
+const V = v => { const m = t().val; if (Array.isArray(v)) return JSON.stringify(v.map(x => m[x] ?? x)); if (typeof v === 'string') return JSON.stringify(m[v] ?? v); return JSON.stringify(v); };
+
+// ============================================================ graph definition
+const REDUCERS = { taste_history: 'add', sides_ready: 'add', salt_g: 'add', errors: 'add' };
+const NODE_FN = {
+  shop_check: s => { const req = ['カレールー','じゃがいも','人参','玉ねぎ','豚肉']; return { missing_items: req.filter(x => !s.ingredients.includes(x)) }; },
+  shop_buy_missing: s => ({ ingredients: s.ingredients.concat(s.missing_items), missing_items: [] }),
+  peel_vegetables: s => ({ peeled_vegetables: s.ingredients.filter(i => ['人参','じゃがいも'].includes(i)) }),
+  cut_vegetables: s => ({ cut_vegetables: s.peeled_vegetables.concat(['玉ねぎ']) }),
+  saute_meat: () => ({ meat_browned: true }),
+  saute_vegetables: () => ({ vegetables_sauteed: true }),
+  add_water: () => ({ water_added_ml: 600 }),
+  simmer: s => { const e = (s.simmer_elapsed_min || 0) + 10; return { simmer_elapsed_min: e, potato_softness: Math.min(1, e / 20) }; },
+  add_roux: () => ({ roux_added: true }),
+  taste_check: s => { const c = (s.revision_count || 0) + 1; const r = (s.salt_g || 0) >= 2 ? '良好' : '薄い'; return { taste_result: r, revision_count: c, taste_history: [r] }; },
+  add_salt: () => ({ salt_g: 1 }),
+  cook_rice: () => ({ sides_ready: ['ご飯'] }),
+  prepare_pickles: () => ({ sides_ready: ['福神漬け'] }),
+  plate: () => ({ final_dish_ready: true }),
+};
+const EDGES = {
+  shop_check: s => s.missing_items.length ? ['shop_buy_missing'] : ['peel_vegetables'],
+  shop_buy_missing: ['peel_vegetables'], peel_vegetables: ['cut_vegetables'], cut_vegetables: ['saute_meat'],
+  saute_meat: ['saute_vegetables'], saute_vegetables: ['add_water'], add_water: ['simmer'],
+  simmer: s => s.potato_softness >= 1 ? ['add_roux'] : ['simmer'],
+  add_roux: ['taste_check'],
+  taste_check: s => s.taste_result === '薄い' ? ['add_salt'] : ['cook_rice','prepare_pickles'],
+  add_salt: ['taste_check'], cook_rice: ['plate'], prepare_pickles: ['plate'], plate: [],
+};
+const COND_TARGETS = { shop_check: ['shop_buy_missing','peel_vegetables'], simmer: ['simmer','add_roux'], taste_check: ['add_salt','cook_rice','prepare_pickles'] };
+const COND = new Set(Object.keys(COND_TARGETS));
+const JOIN = { plate: ['cook_rice','prepare_pickles'] };
+const RW = {
+  shop_check: [['ingredients'], ['missing_items']], shop_buy_missing: [['ingredients','missing_items'], ['ingredients','missing_items']],
+  peel_vegetables: [['ingredients'], ['peeled_vegetables']], cut_vegetables: [['peeled_vegetables','cut_style'], ['cut_vegetables']],
+  saute_meat: [[], ['meat_browned']], saute_vegetables: [['cut_vegetables'], ['vegetables_sauteed']], add_water: [[], ['water_added_ml']],
+  simmer: [['simmer_elapsed_min'], ['simmer_elapsed_min','potato_softness']], add_roux: [[], ['roux_added']],
+  taste_check: [['salt_g','revision_count'], ['taste_result','revision_count','taste_history']], add_salt: [[], ['salt_g']],
+  cook_rice: [[], ['sides_ready']], prepare_pickles: [[], ['sides_ready']], plate: [['sides_ready','human_note'], ['final_dish_ready']],
+};
+const START = 'shop_check';
+const POS = { shop_check:[70,60], shop_buy_missing:[70,150], peel_vegetables:[230,60], cut_vegetables:[380,60], saute_meat:[530,60], saute_vegetables:[680,60],
+  add_water:[680,160], simmer:[530,160], add_roux:[380,160], taste_check:[230,160], add_salt:[230,260],
+  cook_rice:[380,330], prepare_pickles:[530,330], plate:[455,420] };
+const W = 118, H = 40;
+
+// ============================================================ engine
+let S, selectedNode = null, lastNote = null;
+const concepts = new Set();
+function initial() {
+  return { step: 0, frontier: new Set([START]), done: new Set(), state: { ingredients: ['人参','じゃがいも','豚肉'], cut_style: '一口大', salt_g: 0, revision_count: 0, taste_history: [], sides_ready: [], errors: [] },
+    changed: new Set(), paused: null, failLeft: {}, halted: false, lastEdges: [], takenEdges: [], failedNodes: new Set(), retriedNodes: new Set(), finished: false, approvedOnce: false };
+}
+function opts() {
+  const ints = new Set(); if (document.getElementById('optInterruptRoux').checked) ints.add('add_roux'); if (document.getElementById('optInterruptTaste').checked) ints.add('taste_check');
+  return { parallel: document.getElementById('optParallel').checked, interrupts: ints, failNode: document.getElementById('optFailNode').value, failTimes: +document.getElementById('optFailTimes').value, retries: +document.getElementById('optRetries').value };
+}
+function apply(state, updates) {
+  const next = { ...state }; const changed = new Set();
+  for (const u of updates) for (const [k, v] of Object.entries(u)) { if (REDUCERS[k] === 'add') next[k] = Array.isArray(v) ? (next[k] || []).concat(v) : (next[k] || 0) + v; else next[k] = v; changed.add(k); }
+  return [next, changed];
+}
+// notes are stored as a "recipe" so they can be re-rendered in the other language
+function note(kind, args, tags) { lastNote = { kind, args, tags }; concepts.clear(); tags.forEach(x => concepts.add(x)); }
+function renderNote() {
+  const n = document.getElementById('now'); const tt = t();
+  if (!lastNote) { n.innerHTML = `<div class="step">${tt.readyLabel}</div><div class="what">${tt.initWhat}</div><div class="why">${tt.initWhy}</div>`; return; }
+  const { kind, args } = lastNote; let what = '', why = '';
+  const prefix = (args.retried || []).map(([n, a, r]) => tt.retriedMsg(L(n), a, r)).join(' ');
+  switch (kind) {
+    case 'interrupt': what = tt.intWhat(args.nodes.map(L).join('、')); why = tt.intWhy; break;
+    case 'reject': what = tt.rejWhat; why = tt.rejWhy; break;
+    case 'fail': what = tt.failWhat(args.nodes.map(L).join('、')); why = tt.failWhy; break;
+    case 'fin': what = tt.finWhat; why = tt.finWhy(args.step, args.count, args.salt, args.sides.map(x => tt.val[x] ?? x).join(lang === 'ja' ? '・' : ', ')); break;
+    case 'fan': what = tt.fanWhat(args.ready.map(L)); why = args.merged.length ? tt.fanWhyMerged(args.merged.map(k => tt.key[k] || k).join(', ')) : tt.fanWhy; break;
+    case 'join': what = tt.joinWhat(args.ready.map(L).join('、'), args.waiting.map(L).join('、')); why = tt.joinWhy(args.waiting.map(L).join('、'), args.deps.map(L).join(lang === 'ja' ? ' と ' : ' and ')); break;
+    case 'cyc': what = tt.cycWhat(L(args.node)); why = tt.cycWhy(args.soft); break;
+    case 'cond': what = tt.condWhat(L(args.node), args.next.map(L).join('」「')); why = tt.condWhy; break;
+    default: what = tt.fixWhat(args.ready.map(L).join('、'), args.next.map(L).join('」「')); why = tt.fixWhy(args.changed.map(k => tt.key[k] || k).join(', '));
+  }
+  if (prefix) what = prefix + ' ' + what;
+  n.innerHTML = `<div class="step">${S.finished ? tt.doneLabel : tt.stepLabel + ' ' + S.step}</div><div class="what">${what}</div><div class="why">${why}</div>`;
+}
+const LOG = [];
+function log(text, cls = '') { LOG.push([S.step, text, cls]); }
+function renderLog() { const l = document.getElementById('log'); l.innerHTML = LOG.map(([s, x, c]) => `<div class="l"><span class="n">${String(s).padStart(2, '0')}</span><span class="${c}">${x}</span></div>`).join(''); l.scrollTop = l.scrollHeight; }
+
+function stepOnce() {
+  if (S.finished || S.halted || S.paused) return;
+  const o = opts();
+  const stop = [...S.frontier].filter(n => o.interrupts.has(n));
+  if (stop.length && !S.approvedOnce) { S.paused = stop; note('interrupt', { nodes: stop }, [t().chips[7], t().chips[6]]); log(`⏸ interrupt before ${stop.join(', ')}: waiting for human`, 'gate'); render(); return; }
+  S.approvedOnce = false;
+  S.step++;
+  let ready = [...S.frontier].filter(n => (JOIN[n] || []).every(d => S.done.has(d)));
+  const waiting = [...S.frontier].filter(n => !ready.includes(n));
+  if (!o.parallel && ready.length > 1) ready = [ready[0]];
+  const updates = [], failed = [], retried = []; const tags = []; S.retriedNodes = new Set(); S.lastEdges = [];
+  const c = t().chips; // [turn, merge, fork, repeat, split, join, save, ask, retry]
+  if (ready.length > 1) tags.push(c[0], c[4]);
+  for (const n of ready.sort()) {
+    let ok = false;
+    for (let attempt = 0; attempt <= o.retries; attempt++) {
+      if (o.failNode === n && (S.failLeft[n] ?? o.failTimes) > 0) { S.failLeft[n] = (S.failLeft[n] ?? o.failTimes) - 1; log(`⚠ ${n} failed (attempt ${attempt + 1}/${o.retries + 1})`, 'fail'); updates.push({ errors: [`${n}@turn${S.step}`] }); tags.push(c[8]); continue; }
+      updates.push(NODE_FN[n](S.state)); ok = true; if (attempt > 0) { retried.push([n, attempt, o.retries]); S.retriedNodes.add(n); } break;
+    }
+    if (!ok) failed.push(n);
+  }
+  [S.state, S.changed] = apply(S.state, updates);
+  if (failed.length) { S.failedNodes = new Set(failed); S.halted = true; note('fail', { nodes: failed, retried }, [c[8], c[6]]); log(`✖ retries exhausted for ${failed.join(', ')}; frontier kept: ${[...S.frontier].join(', ')}`, 'fail'); render(); return; }
+  ready.forEach(n => S.done.add(n));
+  const next = new Set();
+  for (const n of ready) { const e = EDGES[n]; const targets = typeof e === 'function' ? e(S.state) : e; targets.forEach(x => { next.add(x); S.lastEdges.push([n, x]); S.takenEdges.push([n, x]); }); if (COND.has(n)) tags.push(c[2]); if (targets.includes(n)) tags.push(c[3]); }
+  S.frontier = new Set([...S.frontier].filter(n => !ready.includes(n)).concat([...next]));
+  const merged = Object.keys(REDUCERS).filter(k => updates.filter(u => k in u).length > 1);
+  if (merged.length) tags.push(c[1]);
+  if (S.done.has('plate')) { S.finished = true; S.frontier.clear(); }
+  if (S.finished) note('fin', { step: S.step, count: S.state.revision_count, salt: S.state.salt_g, sides: S.state.sides_ready, retried }, tags);
+  else if (ready.length > 1) note('fan', { ready, merged, retried }, tags);
+  else if (waiting.length) { tags.push(c[5]); note('join', { ready, waiting, deps: JOIN[waiting[0]] || [], retried }, tags); }
+  else if (ready.length === 1 && S.lastEdges.some(([a, b]) => a === b)) note('cyc', { node: ready[0], soft: S.state.potato_softness, retried }, tags);
+  else if (ready.length === 1 && COND.has(ready[0])) note('cond', { node: ready[0], next: [...next], retried }, tags);
+  else note('fix', { ready, next: [...next], changed: [...S.changed], retried }, tags);
+  log(`${ready.join(', ')} → ${[...next].join(', ') || 'END'}${merged.length ? ' · reducer merge: ' + merged.join(', ') : ''}`, S.finished ? 'ok' : '');
+  render();
+}
+
+// ============================================================ rendering
+function renderGraph() {
+  const tt = t(); const g = document.getElementById('nodes'), eg = document.getElementById('edges'); g.innerHTML = ''; eg.innerHTML = '';
+  const takenKey = new Set(S.takenEdges.map(e => e.join('>'))); const lastKey = new Set(S.lastEdges.map(e => e.join('>')));
+  for (const [from, e] of Object.entries(EDGES)) {
+    const targets = typeof e === 'function' ? COND_TARGETS[from] : e;
+    for (const to of targets) {
+      const [x1, y1] = POS[from], [x2, y2] = POS[to]; let d, lx, ly;
+      if (from === to) { d = `M${x1 + W / 2},${y1 - 8} c 30,-40 -110,-40 -${W / 2 + 4},-6`; lx = x1 - 10; ly = y1 - 44; }
+      else { const dx = x2 - x1, dy = y2 - y1, horiz = Math.abs(dx) > Math.abs(dy); const sx = x1 + (horiz ? Math.sign(dx) * W / 2 : 0), sy = y1 + (horiz ? 0 : Math.sign(dy) * H / 2); const tx = x2 - (horiz ? Math.sign(dx) * (W / 2 + 2) : 0), ty = y2 - (horiz ? 0 : Math.sign(dy) * (H / 2 + 2)); d = `M${sx},${sy} L${tx},${ty}`; lx = (x1 + x2) / 2; ly = (y1 + y2) / 2 - 6; if (from === 'taste_check' && to !== 'add_salt') ly += (to === 'cook_rice' ? -14 : 8); }
+      const k = from + '>' + to;
+      const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', d);
+      p.setAttribute('class', 'edge' + (COND.has(from) ? ' cond' : '') + (lastKey.has(k) ? ' active' : takenKey.has(k) ? ' taken' : '')); eg.appendChild(p);
+      if (tt.edge[k]) {
+        const text = tt.edge[k]; const w = text.length * (lang === 'ja' ? 10 : 6) + 8;
+        const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect'); bg.setAttribute('class', 'elabel-bg'); bg.setAttribute('x', lx - w / 2); bg.setAttribute('y', ly - 10); bg.setAttribute('width', w); bg.setAttribute('height', 13); bg.setAttribute('rx', 3); eg.appendChild(bg);
+        const tx = document.createElementNS('http://www.w3.org/2000/svg', 'text'); tx.setAttribute('class', 'elabel'); tx.setAttribute('x', lx); tx.setAttribute('y', ly); tx.setAttribute('text-anchor', 'middle'); tx.textContent = text; eg.appendChild(tx);
+      }
+    }
+  }
+  for (const [n, [x, y]] of Object.entries(POS)) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    let cls = 'node' + (selectedNode === n ? ' selected' : ''); if (S.failedNodes.has(n)) cls += ' failed'; else if (S.retriedNodes.has(n)) cls += ' retried'; else if (S.paused && S.paused.includes(n)) cls += ' interrupt'; else if (S.frontier.has(n)) cls += ' frontier'; else if (S.done.has(n)) cls += ' done';
+    el.setAttribute('class', cls);
+    el.innerHTML = `<rect x="${x - W / 2}" y="${y - H / 2}" width="${W}" height="${H}"/><text x="${x}" y="${y + 4}" text-anchor="middle">${L(n)}</text><text class="badge" x="${x}" y="${y + H / 2 + 12}" text-anchor="middle">${n}${JOIN[n] ? ' · join' : ''}${opts().interrupts.has(n) ? ' · interrupt' : ''}</text>`;
+    el.addEventListener('click', () => { selectedNode = selectedNode === n ? null : n; render(); });
+    g.appendChild(el);
+  }
+}
+function renderNodeInfo() {
+  const box = document.getElementById('nodeinfo'); const tt = t();
+  if (!selectedNode) { box.hidden = true; return; }
+  const [reads, writes] = RW[selectedNode]; const f = k => `<code>${tt.key[k] || k}</code>`;
+  const outs = COND.has(selectedNode) ? COND_TARGETS[selectedNode].map(x => `${L(x)} (${tt.edge[selectedNode + '>' + x]})`) : EDGES[selectedNode].map(L);
+  box.hidden = false;
+  box.innerHTML = `<b>${tt.niNode(L(selectedNode))}</b><span>${tt.desc[selectedNode]}</span><span>${tt.niReads}: ${reads.length ? reads.map(f).join(' ') : tt.niNone}</span><span>${tt.niWrites}: ${writes.length ? writes.map(f).join(' ') : tt.niNone}</span><span>${tt.niOut}: ${outs.length ? outs.join(' / ') : tt.niEnd}${JOIN[selectedNode] ? ' · ' + tt.niJoin : ''}</span>`;
+}
+function renderStatic() {
+  const tt = t();
+  document.querySelectorAll('[data-t]').forEach(el => { const v = tt[el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+  document.getElementById('btnStep').textContent = tt.btnStep; document.getElementById('btnReset').textContent = tt.btnReset; document.getElementById('btnAuto').textContent = timer ? tt.btnStop : tt.btnAuto;
+  const cls = { frontier: 'border-color:var(--accent);background:var(--accent-soft)', done: 'border-color:var(--done);background:var(--done-soft)', interrupt: 'border-color:var(--gate);background:var(--gate-soft);border-style:dashed', failed: 'border-color:var(--fail);background:var(--fail-soft)', retried: 'border-color:var(--fail);border-style:dashed' };
+  document.getElementById('legend').innerHTML = tt.legend.map(([k, s]) => `<span><i style="${cls[k]}"></i>${s}</span>`).join('');
+  document.getElementById('edgeLegend').innerHTML = tt.edgeLegend.map(s => `<span>${s}</span>`).join('');
+  document.getElementById('glossary').innerHTML = tt.gloss.map(([b, p]) => `<div><b>${b}</b><p>${p}</p></div>`).join('');
+  document.getElementById('langJa').className = lang === 'ja' ? 'on' : ''; document.getElementById('langEn').className = lang === 'en' ? 'on' : '';
+  document.documentElement.lang = lang;
+}
+function render() {
+  const tt = t();
+  renderStatic(); renderGraph(); renderNodeInfo(); renderNote(); renderLog();
+  const f = document.getElementById('frontier'); f.innerHTML = [...S.frontier].map(n => { const ok = (JOIN[n] || []).every(d => S.done.has(d)); return `<span class="${ok ? '' : 'wait'}">${L(n)}${ok ? '' : ' ' + tt.waiting}</span>`; }).join('') || `<span style="color:var(--muted)">${tt.frontEmpty}</span>`;
+  document.getElementById('state').innerHTML = Object.entries(S.state).map(([k, v]) => `<tr class="${S.changed.has(k) ? 'changed' : ''}"><td class="k">${tt.key[k] || k}${REDUCERS[k] ? `<span class="red">${tt.reducerTag}</span>` : ''}<small>${k}</small></td><td class="v">${V(v)}</td></tr>`).join('');
+  document.getElementById('ckpt').textContent = JSON.stringify({ step: S.step, frontier: [...S.frontier], done: [...S.done], state: S.state }, null, 1);
+  document.getElementById('concepts').innerHTML = tt.chips.map((x, i) => `<span class="chip ${[...concepts].some(c => T.ja.chips[i] === c || T.en.chips[i] === c) ? 'on' : ''}">${x}</span>`).join('');
+  document.getElementById('btnStep').disabled = S.finished || !!S.paused || S.halted;
+  document.getElementById('btnAuto').disabled = S.finished || !!S.paused || S.halted;
+  const g = document.getElementById('gate');
+  if (S.paused) {
+    g.hidden = false; const names = S.paused.map(L).join('、');
+    g.innerHTML = `<div class="gatebox"><b>${tt.gateTitle(names)}</b><small>${tt.gateSub}</small><input type="text" id="humanNote" placeholder="${tt.gatePh}" value="${tt.gateDefault}"><div class="row"><button class="primary" id="btnApprove">${tt.approve}</button><button id="btnReject">${tt.reject}</button></div></div>`;
+    document.getElementById('btnApprove').onclick = () => { S.state = { ...S.state, human_note: document.getElementById('humanNote').value }; S.changed = new Set(['human_note']); S.paused = null; S.approvedOnce = true; log('✔ approved; human_note recorded', 'gate'); stepOnce(); };
+    document.getElementById('btnReject').onclick = () => { log('✖ rejected; graph stays paused (fail closed)', 'gate'); note('reject', {}, [tt.chips[7]]); render(); };
+  } else if (S.halted) {
+    g.hidden = false; const names = [...S.failedNodes].map(L).join('、');
+    g.innerHTML = `<div class="gatebox"><b>${tt.repairTitle(names)}</b><small>${tt.repairSub}</small><div class="row"><button class="primary" id="btnRepair">${tt.repair}</button></div></div>`;
+    document.getElementById('btnRepair').onclick = () => { document.getElementById('optFailNode').value = ''; S.failLeft = {}; S.halted = false; S.failedNodes = new Set(); log('🔧 repaired; resuming from checkpoint', 'ok'); render(); stepOnce(); };
+  } else g.hidden = true;
+}
+
+// ============================================================ controls
+let timer = null;
+function stopAuto() { if (timer) { clearInterval(timer); timer = null; } }
+function reset() { S = initial(); LOG.length = 0; lastNote = null; concepts.clear(); selectedNode = null; stopAuto(); render(); }
+document.getElementById('btnStep').onclick = stepOnce;
+document.getElementById('btnReset').onclick = reset;
+document.getElementById('btnAuto').onclick = () => { if (timer) { stopAuto(); render(); return; } timer = setInterval(() => { if (S.finished || S.paused || S.halted) { stopAuto(); render(); return; } stepOnce(); }, 900); render(); };
+document.getElementById('langJa').onclick = () => { lang = 'ja'; try { localStorage.setItem('cgl-lang', 'ja'); } catch (e) {} render(); };
+document.getElementById('langEn').onclick = () => { lang = 'en'; try { localStorage.setItem('cgl-lang', 'en'); } catch (e) {} render(); };
+['optParallel','optInterruptRoux','optInterruptTaste','optFailNode','optFailTimes','optRetries'].forEach(id => document.getElementById(id).addEventListener('change', () => render()));
+reset();
+</script>
