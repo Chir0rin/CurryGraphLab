@@ -24,17 +24,18 @@
   --gate:#7aa6d9; --gate-soft:#1e2c3d; --code-bg:#121419;
 }
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;padding:0 16px;padding-block:24px 48px;line-height:1.65;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;padding:0 16px;padding-block:16px 40px;line-height:1.65;-webkit-font-smoothing:antialiased}
 h1{font-size:1.6rem;font-weight:700;margin:0;letter-spacing:.01em;text-wrap:balance}
 h2{font-size:.82rem;font-weight:700;letter-spacing:.06em;color:var(--muted);margin:0 0 8px}
 p{margin:0}
-.wrap{max-width:1240px;margin:0 auto;display:grid;gap:24px}
-header{display:grid;grid-template-columns:1fr auto;gap:16px 24px;align-items:start}
-header p{color:var(--muted);max-width:64ch;margin-top:8px}
-.purpose{margin-top:8px;padding:16px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:0 8px 8px 0;background:var(--panel);max-width:72ch}
-.purpose b{display:block;margin-bottom:8px}
-.purpose ol{margin:0;padding-left:24px;display:grid;gap:8px}
-.purpose li{line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:16px}
+header{display:grid;grid-template-columns:1fr auto;gap:8px 24px;align-items:start}
+header p{color:var(--muted);max-width:none;margin-top:8px;font-size:.9rem}
+.purpose{margin-top:8px;padding:8px 16px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:0 8px 8px 0;background:var(--panel)}
+.purpose b{display:block;margin-bottom:4px;font-size:.9rem}
+.purpose ol{margin:0;padding-left:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px 24px;counter-reset:p}
+.purpose li{line-height:1.45;font-size:.92rem;padding-left:24px;position:relative}
+.purpose li::before{counter-increment:p;content:counter(p);position:absolute;left:0;top:0;width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;font-size:.72rem;font-weight:700;display:grid;place-items:center;margin-top:2px}
 .lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel)}
 .lang button{border:0;border-radius:0;padding:8px 16px;font-size:.85rem}
 .lang button.on{background:var(--ink);color:var(--bg)}
@@ -44,7 +45,7 @@ header p{color:var(--muted);max-width:64ch;margin-top:8px}
 @media (max-width:1000px){.top{grid-template-columns:1fr}}
 .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
 .nowpanel{display:grid;align-content:start;gap:8px}
-.statebox{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.statebox{max-height:400px;overflow:auto;border:1px solid var(--line);border-radius:8px}
 .statebox thead th{position:sticky;top:0;background:var(--panel);z-index:1}
 .hint{color:var(--muted);font-size:.82rem;margin:0 0 8px}
 tr.changed td.k::before{content:"▲ ";color:var(--accent-ink)}
@@ -69,7 +70,7 @@ select{width:auto}
 svg{display:block;width:100%;height:auto;max-width:100%;font-family:var(--sans)}
 .node{cursor:pointer}
 .node rect{fill:var(--panel);stroke:var(--pending);stroke-width:1.5;rx:8}
-.node text{fill:var(--ink);font-size:12.5px;font-weight:700}
+.node text{fill:var(--ink);font-size:12px;font-weight:700}
 .node.frontier rect{stroke:var(--accent);stroke-width:2.5;fill:var(--accent-soft)}
 .node.done rect{stroke:var(--done);fill:var(--done-soft)}
 .node.failed rect{stroke:var(--fail);stroke-width:2.5;fill:var(--fail-soft)}
@@ -80,11 +81,11 @@ svg{display:block;width:100%;height:auto;max-width:100%;font-family:var(--sans)}
 .edge.cond{stroke-dasharray:6 4}
 .edge.active{stroke:var(--accent);stroke-width:2.5;marker-end:url(#arr-active)}
 .edge.taken{stroke:var(--done);marker-end:url(#arr-done)}
-.badge{font-size:10px;fill:var(--muted);font-family:var(--mono)}
+.badge{font-size:9px;fill:var(--muted);font-family:var(--mono)}
 .elabel{font-size:10.5px;fill:var(--gate);font-weight:700}
 .elabel-bg{fill:var(--panel)}
-.schema{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:0 0 16px;font-size:.82rem}
-.schema>div{display:flex;flex-direction:column;justify-content:center;border-radius:8px;padding:8px 16px;line-height:1.4}
+.schema{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:0 0 8px;font-size:.8rem}
+.schema>div{display:flex;flex-direction:column;justify-content:center;border-radius:8px;padding:4px 12px;line-height:1.35}
 .schema small{color:var(--muted);font-size:.72rem}
 .sc-node{border:1.5px solid var(--pending);background:var(--panel);min-width:80px}
 .sc-edge{position:relative;padding-right:24px!important;color:var(--muted)}
@@ -112,7 +113,7 @@ tr.changed td.v::after{content:" ←";color:var(--accent-ink)}
 .front{font-size:.85rem;display:flex;flex-wrap:wrap;gap:8px}
 .front span{padding:4px 8px;border-radius:8px;background:var(--code-bg);border:1px solid var(--line)}
 .front span.wait{border-style:dashed;color:var(--muted)}
-.log{font-family:var(--mono);font-size:.8rem;max-height:264px;overflow:auto;background:var(--code-bg);border-radius:8px;padding:16px;display:grid;gap:4px}
+.log{font-family:var(--mono);font-size:.8rem;max-height:200px;overflow:auto;background:var(--code-bg);border-radius:8px;padding:16px;display:grid;gap:4px}
 .log .l{display:grid;grid-template-columns:40px 1fr;gap:8px}
 .log .n{color:var(--muted)}
 .log .fail{color:var(--fail)}
@@ -176,7 +177,7 @@ pre{font-family:var(--mono);font-size:.75rem;background:var(--code-bg);padding:1
         <div class="sc-node"><span data-t="scNode"></span><small data-t="scNodeSub"></small></div>
         <div class="sc-state"><span data-t="scState"></span><small data-t="scStateSub"></small></div>
       </div>
-      <svg id="svg" viewBox="0 0 760 470" role="img" aria-label="graph">
+      <svg id="svg" viewBox="0 0 760 336" role="img" aria-label="graph">
         <defs>
           <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a9b0bd"/></marker>
           <marker id="arr-active" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#c98a12"/></marker>
@@ -220,7 +221,7 @@ const T = {
 ja: {
   purposeTitle:'このツールの目的',
   purpose:['AI や自動化の裏側で使われる「状態グラフ」という仕組みを、実際に動かして直感で理解する。','専門用語(ノード・エッジ・ステート・Reducer・interrupt など)を、日常の言葉と 1 対 1 で結びつける。','「途中で止める」「やり直す」「記録を残す」という、本番運用で効いてくる 3 つの要点を体験する。'],
-  intro:'カレー作りの手順を「工程のつながり(グラフ)」として書き、それを 1 手番ずつ動かして観察するページ。左の図で「次にどの工程ができるか」、右の表で「材料や鍋の状態がどう変わったか」、解説で「いま何が起きたか」を追う。専門用語は括弧の中に添えてある。',
+  intro:'カレー作りの手順を「工程のつながり(グラフ)」として書き、1 手番ずつ動かして観察する。専門用語は括弧の中に添えてある。',
   legend:[['frontier','次にできる工程(frontier)'],['done','完了'],['interrupt','人に聞くため停止(interrupt)'],['failed','失敗して停止'],['retried','失敗したがやり直しで成功']],
   btnStep:'1 手番進める', btnAuto:'自動で進める', btnStop:'停止', btnReset:'最初から',
   optParallel:'手分けして同時に進める(並行実行)', optIntRoux:'ルーを入れる前に人に聞く', optIntTaste:'味見の前にも人に聞く',
@@ -265,7 +266,7 @@ ja: {
 en: {
   purposeTitle:'What this tool is for',
   purpose:['Understand the "state graph" mechanism behind AI agents and automation by running one, not by reading about it.','Tie each technical term (node, edge, state, reducer, interrupt, …) to an everyday word, one to one.','Experience the three things that matter in production: pausing for a human, retrying, and keeping a record.'],
-  intro:'Write the steps of making curry as a graph of connected stages, then run it one turn at a time and watch. The diagram on the left shows which stages can run next, the table on the right shows how the ingredients and the pot change, and the narration says what just happened. Technical terms follow in parentheses.',
+  intro:'The steps of making curry, written as a graph of connected stages and run one turn at a time. Technical terms follow in parentheses.',
   legend:[['frontier','can run next (frontier)'],['done','done'],['interrupt','paused to ask a human (interrupt)'],['failed','failed and stopped'],['retried','failed, then succeeded on retry']],
   btnStep:'Advance one turn', btnAuto:'Auto-run', btnStop:'Stop', btnReset:'Restart',
   optParallel:'Run stages side by side (parallel)', optIntRoux:'Ask a human before adding roux', optIntTaste:'Also ask before each tasting',
@@ -352,10 +353,10 @@ const RW = {
   cook_rice: [[], ['sides_ready']], prepare_pickles: [[], ['sides_ready']], plate: [['sides_ready','human_note'], ['final_dish_ready']],
 };
 const START = 'shop_check';
-const POS = { shop_check:[70,60], shop_buy_missing:[70,150], peel_vegetables:[230,60], cut_vegetables:[380,60], saute_meat:[530,60], saute_vegetables:[680,60],
-  add_water:[680,160], simmer:[530,160], add_roux:[380,160], taste_check:[230,160], add_salt:[230,260],
-  cook_rice:[380,330], prepare_pickles:[530,330], plate:[455,420] };
-const W = 118, H = 40;
+const POS = { shop_check:[64,44], peel_vegetables:[190,44], cut_vegetables:[316,44], saute_meat:[442,44], saute_vegetables:[568,44], add_water:[694,44],
+  shop_buy_missing:[64,132], taste_check:[316,132], add_roux:[442,132], simmer:[568,132],
+  prepare_pickles:[64,220], cook_rice:[190,220], add_salt:[316,220], plate:[127,300] };
+const W = 108, H = 36;
 
 // ============================================================ engine
 let S, selectedNode = null, lastNote = null;
@@ -446,8 +447,8 @@ function renderGraph() {
     const targets = typeof e === 'function' ? COND_TARGETS[from] : e;
     for (const to of targets) {
       const [x1, y1] = POS[from], [x2, y2] = POS[to]; let d, lx, ly;
-      if (from === to) { d = `M${x1 + W / 2},${y1 - 8} c 30,-40 -110,-40 -${W / 2 + 4},-6`; lx = x1 - 10; ly = y1 - 44; }
-      else { const dx = x2 - x1, dy = y2 - y1, horiz = Math.abs(dx) > Math.abs(dy); const sx = x1 + (horiz ? Math.sign(dx) * W / 2 : 0), sy = y1 + (horiz ? 0 : Math.sign(dy) * H / 2); const tx = x2 - (horiz ? Math.sign(dx) * (W / 2 + 2) : 0), ty = y2 - (horiz ? 0 : Math.sign(dy) * (H / 2 + 2)); d = `M${sx},${sy} L${tx},${ty}`; lx = (x1 + x2) / 2; ly = (y1 + y2) / 2 - 6; if (from === 'taste_check' && to !== 'add_salt') ly += (to === 'cook_rice' ? -14 : 8); }
+      if (from === to) { d = `M${x1 + W / 2},${y1 - 6} c 28,-32 -104,-32 -${W / 2 + 4},-4`; lx = x1; ly = y1 - 38; }
+      else { const dx = x2 - x1, dy = y2 - y1, horiz = Math.abs(dx) > Math.abs(dy); const sx = x1 + (horiz ? Math.sign(dx) * W / 2 : 0), sy = y1 + (horiz ? 0 : Math.sign(dy) * H / 2); const tx = x2 - (horiz ? Math.sign(dx) * (W / 2 + 2) : 0), ty = y2 - (horiz ? 0 : Math.sign(dy) * (H / 2 + 2)); d = `M${sx},${sy} L${tx},${ty}`; lx = (x1 + x2) / 2; ly = (y1 + y2) / 2 - 6; if (from === 'taste_check' && to === 'cook_rice') { ly -= 10; } if (from === 'taste_check' && to === 'prepare_pickles') { ly += 12; lx -= 24; } if (from === 'add_water') { lx += 0; } }
       const k = from + '>' + to;
       const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', d);
       p.setAttribute('class', 'edge' + (COND.has(from) ? ' cond' : '') + (lastKey.has(k) ? ' active' : takenKey.has(k) ? ' taken' : '')); eg.appendChild(p);
